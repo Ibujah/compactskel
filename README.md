@@ -30,11 +30,15 @@ The program is now in bin/
 To use it on an example:
 
 ```
-./soft_2dskeletonization --img ../ressources/rat.png --epsilon 2.1 --output
+./soft_2dskeletonization --img ../ressources/rat.png --output
 ```
 
 To compute a Voronoi skeleton:
 
 ```
-./soft_2dskeletonization --img ../ressources/rat.png --epsilon 0.0 --output
+./soft_2dskeletonization --img ../ressources/rat.png --epsilon 0.00000001 --output
 ```
+
+## Misc
+
+If you find a bug, or have a question, do not hesitate to ask!
