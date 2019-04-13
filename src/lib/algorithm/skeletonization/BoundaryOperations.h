@@ -62,6 +62,11 @@ namespace algorithm
 			 * @brief Structure to optimize the computation of the skeleton
 			 */
 			using OptiBnd = std::unordered_map<unsigned int, OptiPt>;
+			
+			/**
+			 * @brief Structure to determine if all points have been used
+			 */
+			using OptiUsedBnd = std::map<unsigned int, bool>;
 
 			/**
 			 * @brief  Finds the closest points on the boundary to a given center
@@ -147,17 +152,20 @@ namespace algorithm
 			
 			/**
 			 * @brief Creates a structure to optimize the computation of the skeleton
-			 * @param disBnd  Boundary of the shape
-			 * @param optiBnd [out] Optimised structure
+			 * @param disBnd      Boundary of the shape
+			 * @param optiBnd     [out] Optimised structure
+			 * @param optiUsedBnd [out] Structure telling used points
 			 */
-			void createOptiBnd(const boundary::DiscreteBoundary<2>::Ptr &disBnd, OptiBnd &optiBnd);
+			void createOptiBnd(const boundary::DiscreteBoundary<2>::Ptr &disBnd, OptiBnd &optiBnd, OptiUsedBnd &optiUsedBnd);
 			
 			/**
 			 * @brief Cleans the boundary structure from used points
-			 * @param optiBnd [in/out] Optimized structure
-			 * @param toErase Indices to erase
+			 * @param optiBnd     [in/out] Optimized structure
+			 * @param optiUsedBnd [in/out] Structure telling used points
+			 * @param toErase     Indices to erase
+			 * @param closestInds Indice of the closest points
 			 */
-			void cleanOptiBnd(OptiBnd &optiBnd, const std::list<unsigned int> &toErase);
+			void cleanOptiBnd(OptiBnd &optiBnd, OptiUsedBnd &optiUsedBnd, const std::list<unsigned int> &toErase, const std::vector<unsigned int> &closestInds);
 		}
 	}
 }

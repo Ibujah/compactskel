@@ -7,7 +7,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/lib
 					
 set(SOURCE_FILES    extractboundary/NaiveBoundary.cpp
 					skeletonization/SpherePropagation2D.cpp
-					skeletonization/DistanceField.cpp
+					skeletonization/BoundaryOperations.cpp
 					skeletonization/MovingCenter.cpp
 					skinning/Filling.cpp
 					evaluation/ReprojError.cpp)

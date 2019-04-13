@@ -37,15 +37,22 @@ SOFTWARE.
 
 #include <unordered_map>
 
+struct PropagData
+{
+	unsigned int skelInd; // corresponding indice in the skeleton
+	algorithm::skeletonization::propagation::MovingCenter mov; // circle structure
+	unsigned int dir; // next direction to take
+};
+
 skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
-																						std::map<unsigned int, std::list<unsigned int> > &pt_assoc_skel,
 																						const OptionsSphProp &options)
 {
-	OptiBnd optiBnd;
 	skeleton::GraphSkel2d::Ptr skel(new skeleton::GraphSkel2d(skeleton::model::Classic<2>()));
 	
 	// creation of the optimized boundary structure
-	createOptiBnd(disbnd,optiBnd);
+	OptiBnd optiBnd;
+	OptiUsedBnd optiUsedBnd;
+	createOptiBnd(disbnd,optiBnd,optiUsedBnd);
 	
 	// estimation of a point inside the shape
 	Eigen::Vector2d firstPt = firstPoint(optiBnd);
@@ -58,58 +65,57 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 	algorithm::skeletonization::propagation::MovingCenter mov(firstPt);
 	mov.computeContactData(optiBnd,options.epsilon);
 	
-	// search for a local maximum in the Voronoi diagram to be sure that we have a skeletal point
+	// search for a local maximum in the Voronoi diagram to be (quite) sure that we have a skeletal point (can actually be improved...)
 	bool maximised = true;
 	do
 	{
-		algorithm::skeletonization::propagation::MovingCenter movn;
+		algorithm::skeletonization::propagation::MovingCenter movNext;
 		maximised = false;
-		for(unsigned int i = 0; i < mov.getNext().size(); i++)
+		for(unsigned int i = 0; i < mov.getOpen().size(); i++)
 		{
-			if(mov.getNext()[i])
+			if(mov.getOpen()[i])
 			{
-				algorithm::skeletonization::propagation::MovingCenter movncur;
-				mov.propagate(optiBnd,i,movncur,options.epsilon);
+				algorithm::skeletonization::propagation::MovingCenter movNextcur;
+				mov.propagate(optiBnd,i,options.epsilon,movNextcur);
 				
-				if(maximised)
+				if(!maximised)
 				{
-					if(movncur.getRadius() > movn.getRadius())
+					if(movNextcur.getRadius() > mov.getRadius())
 					{
-						movn = movncur;
+						movNext = movNextcur;
+						maximised = true;
 					}
 				}
 				else
 				{
-					if(movncur.getRadius() > mov.getRadius())
+					if(movNextcur.getRadius() > movNext.getRadius())
 					{
-						movn = movncur;
-						maximised = true;
+						movNext = movNextcur;
 					}
 				}
 			}
 		}
 		if(maximised)
-			mov = movn;
+			mov = movNext;
 	}while(maximised);
 	
+	// first moving center
 	mov = algorithm::skeletonization::propagation::MovingCenter(mov.getCenter());
-	mov.computeTangencyData(optiBnd,options.epsilon);
-
-	double rad = mov.getRadius();
-	unsigned int ind = skel->addNode(Eigen::Vector3d(mov.getCenter().x(),mov.getCenter().y(),rad));
-	std::list<unsigned int> bndneigh;
-	mov.getIndBnd(bndneigh);
-	pt_assoc_skel.insert(std::make_pair(ind,bndneigh));
-	mov.clean(optiBnd);
+	mov.computeContactData(optiBnd,options.epsilon);
 	
-	std::list<std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> > lctr;
-	for(unsigned int i = 0; i < mov.getNext().size(); i++)
+	// add it to the skeleton
+	unsigned int ind = skel->addNode(Eigen::Vector3d(mov.getCenter().x(),mov.getCenter().y(),mov.getRadius()));
+	
+	// clean boundary points
+	cleanOptiBnd(optiBnd,optiUsedBnd,mov.getToErase(),mov.getClosestInds());
+	
+	std::list<PropagData> lctr;
+	for(unsigned int i = 0; i < mov.getOpen().size(); i++)
 	{
-		if(mov.getNext()[i])
+		if(mov.getOpen()[i])
 		{
-			std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> cdir;
-			cdir = std::make_tuple(ind,mov,i);
-			lctr.push_back(cdir);
+			PropagData curData{ind,mov,i};
+			lctr.push_back(curData);
 		}
 	}
 	
@@ -119,30 +125,27 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 	{
 		do
 		{
-			std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> cdir = *(lctr.begin());
+			PropagData curData = *(lctr.begin());
 			lctr.pop_front();
 			
-			algorithm::skeletonization::propagation::MovingCenter movn;
-			if(std::get<1>(cdir).propagate(optiBnd,std::get<2>(cdir),movn,options.epsilon))
+			algorithm::skeletonization::propagation::MovingCenter movNext;
+			if(curData.mov.propagate(optiBnd,curData.dir,options.epsilon,movNext))
 			{
-				std::list<unsigned int> bndneighcur;
-				movn.getIndBnd(bndneighcur);
-				movn.clean(optiBnd);
+				cleanOptiBnd(optiBnd,optiUsedBnd,movNext.getToErase(),movNext.getClosestInds());
 
-				unsigned int indcur = skel->addNode(Eigen::Vector3d(movn.getCenter().x(),movn.getCenter().y(),movn.getRadius()));
-				pt_assoc_skel.insert(std::make_pair(indcur,bndneighcur));
-				skel->addEdge(indcur,std::get<0>(cdir));
+				unsigned int indcur = skel->addNode(Eigen::Vector3d(movNext.getCenter().x(),movNext.getCenter().y(),movNext.getRadius()));
+				skel->addEdge(indcur,curData.skelInd);
 				
-				for(unsigned int i = 0; i < movn.getNext().size(); i++)
+				for(unsigned int i = 0; i < movNext.getOpen().size(); i++)
 				{
-					if(movn.getNext()[i])
+					if(movNext.getOpen()[i])
 					{
 						bool skip = false;
-						for(std::list<std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> >::iterator it = lctr.begin(); it != lctr.end() && !skip; it++)
+						for(std::list<PropagData>::iterator it = lctr.begin(); it != lctr.end() && !skip; it++)
 						{
-							if(algorithm::skeletonization::propagation::MovingCenter::neighbors(movn,i,std::get<1>(*it),std::get<2>(*it)))
+							if(algorithm::skeletonization::propagation::MovingCenter::neighbors(movNext,i,it->mov,it->dir))
 							{
-								skel->addEdge(indcur,std::get<0>(*it));
+								skel->addEdge(indcur,it->skelInd);
 								it = lctr.erase(it);
 								skip = true;
 							}
@@ -150,9 +153,8 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 						
 						if(!skip)
 						{
-							std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> cdirn;
-							cdirn = std::make_tuple(indcur,movn,i);
-							lctr.push_back(cdirn);
+							PropagData nextData{indcur,movNext,i};
+							lctr.push_back(nextData);
 						}
 					}
 				}
@@ -162,12 +164,15 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 				cpt = 1;
 			}
 			
-			if(options.epsilon != 0.0)
-				cpt--;
+			cpt--;
 		}while(!lctr.empty() && cpt != 0);
 	}
-	if(cpt == 0)
-		throw std::logic_error("arf");
+
+	for(auto checkUsed : optiUsedBnd)
+	{
+		if(!checkUsed.second)
+			throw std::logic_error("Error while computing the skeleton");
+	}
 	
 	return skel;
 }

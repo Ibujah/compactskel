@@ -126,8 +126,7 @@ int main(int argc, char** argv)
 	
 	auto start0 = std::chrono::steady_clock::now();
 	algorithm::skeletonization::propagation::OptionsSphProp options(2.0*epsilon);
-	std::map<unsigned int,std::list<unsigned int> > pt_assoc_bnd;
-	skeleton::GraphSkel2d::Ptr grskelpropag = algorithm::skeletonization::propagation::SpherePropagation2D(disbnd,pt_assoc_bnd,options);
+	skeleton::GraphSkel2d::Ptr grskelpropag = algorithm::skeletonization::propagation::SpherePropagation2D(disbnd,options);
 	auto duration0 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start0);
 	std::tuple<double,double,int,int> respropag = EvalSkel(dissh,disbnd,grskelpropag);
 	int t0 = duration0.count();
@@ -135,12 +134,6 @@ int main(int argc, char** argv)
 	double H0 = std::get<1>(respropag); // Hausdorff dist
 	int N0 = std::get<2>(respropag); // nb nodes
 	int B0 = std::get<3>(respropag); // nb branches
-
-	if(std::get<1>(respropag) > epsilon)
-	{
-		std::cout << "Error while computing the skeleton" << std::endl;
-		return -1;
-	}
 
 	std::cout << "Skeleton estmated in " << t0 << "ms." << std::endl;
 	std::cout << "Symetric difference area over reference area: " << A0 << "\%" << std::endl;

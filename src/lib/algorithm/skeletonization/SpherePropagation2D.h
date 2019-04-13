@@ -22,9 +22,9 @@ SOFTWARE.
 
 
 /**
- *  \file SpherePropagation2D.h
+ *  @file SpherePropagation2D.h
  *  @brief Defines functions to compute 2d skeleton with sphere propagation algorithm
- *  \author Bastien Durix
+ *  @author Bastien Durix
  */
 
 #ifndef _SPHEREPROPAGATION_H_
@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <skeleton/Skeletons.h>
 #include <boundary/DiscreteBoundary2.h>
-#include <shape/DiscreteShape.h>
 
 #define _NB_CIRCLES_MAX_ 10000
 
@@ -57,28 +56,30 @@ namespace algorithm
 			struct OptionsSphProp
 			{
 				/**
-				 *  @brief Hausdorff distance
+				 *  @brief Algorithm epsilon: double of the hausdorff distance that is approximated by the algorithm
 				 */
 				double epsilon;
 				
+				/**
+				 *  @brief Maximum number of iterations
+				 */
 				unsigned int iter_max;
+
 				/**
 				 *  @brief Default constructor
 				 */
-				OptionsSphProp(double epsilon_ = 2.1, unsigned int iter_max_=_NB_CIRCLES_MAX_) : epsilon(epsilon_), iter_max(iter_max_)
+				OptionsSphProp(double epsilon_ = 2.0, unsigned int iter_max_=_NB_CIRCLES_MAX_) : epsilon(epsilon_), iter_max(iter_max_)
 				{}
 			};
 			
 			/**
 			 *  @brief 2D skeletonization, by sphere propagation
-			 *
-			 *  @param disbnd   discrete boundary of the shape
-			 *  @param disshp   discrete shape
-			 *  @param options  options of the algorithm
-			 *
-			 *  @return pointer to the computed 2d graph skeleton
+			 *  @param disbnd   Discrete boundary of the shape
+			 *  @param options  Options of the algorithm
+			 *  @return Pointer to the computed 2d graph skeleton
 			 */
-			skeleton::GraphSkel2d::Ptr SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd, std::map<unsigned int, std::list<unsigned int> > &pt_assoc_skel, const OptionsSphProp &options = OptionsSphProp());
+			skeleton::GraphSkel2d::Ptr SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
+														   const OptionsSphProp &options = OptionsSphProp());
 		}
 	}
 }

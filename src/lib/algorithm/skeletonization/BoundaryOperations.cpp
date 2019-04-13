@@ -302,7 +302,7 @@ bool algorithm::skeletonization::propagation::contactSet(const OptiBnd &optiBnd,
 	toErase.clear();
 
 	bool fini = false;
-	bool open = false;
+	bool open = true;
 
 	while(!fini)
 	{
@@ -360,19 +360,26 @@ void algorithm::skeletonization::propagation::contactSets(const OptiBnd &optiBnd
 	
 }
 
-void algorithm::skeletonization::propagation::createOptiBnd(const boundary::DiscreteBoundary<2>::Ptr &disBnd, OptiBnd &optiBnd)
+void algorithm::skeletonization::propagation::createOptiBnd(const boundary::DiscreteBoundary<2>::Ptr &disBnd, OptiBnd &optiBnd, OptiUsedBnd &optiUsedBnd)
 {
 	for(unsigned int i = 0; i < disBnd->getNbVertices(); i++)
 	{
 		OptiPt pt{disBnd->getCoordinates(i),disBnd->getPrev(i),disBnd->getNext(i)}; // be sure it's in trigonometric order
 		optiBnd.insert(std::make_pair(i,pt));
+		optiUsedBnd.insert(std::make_pair(i,false));
 	}
 }
 
-void algorithm::skeletonization::propagation::cleanOptiBnd(OptiBnd &optiBnd, const std::list<unsigned int> &toErase)
+void algorithm::skeletonization::propagation::cleanOptiBnd(OptiBnd &optiBnd, OptiUsedBnd &optiUsedBnd, const std::list<unsigned int> &toErase, const std::vector<unsigned int> &closestInds)
 {
 	for(auto indErase : toErase)
 	{
 		optiBnd.erase(indErase);
+		optiUsedBnd[indErase] = true;
+	}
+
+	for(auto indClosest : closestInds)
+	{
+		optiUsedBnd[indClosest] = true;
 	}
 }
