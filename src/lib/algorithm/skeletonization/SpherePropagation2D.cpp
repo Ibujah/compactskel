@@ -22,48 +22,44 @@ SOFTWARE.
 
 
 /**
- *  \file SpherePropagation2D.cpp
- *  \brief Defines functions to compute 2d skeleton with sphere propagation algorithm
- *  \author Bastien Durix
+ *  @file SpherePropagation2D.cpp
+ *  @brief Defines functions to compute 2d skeleton with sphere propagation algorithm
+ *  @author Bastien Durix
  */
 
 #include "SpherePropagation2D.h"
-#include "DistanceField.h"
+#include "BoundaryOperations.h"
 #include "MovingCenter.h"
 #include <time.h>
-
-#include <thread>
-#include <mutex>
 
 #include <iostream>
 #include <fstream>
 
 #include <unordered_map>
 
-
-skeleton::GraphSkel2d::Ptr SpherePropagation2D_helper(const boundary::DiscreteBoundary<2>::Ptr disbnd,
-													  std::map<unsigned int, std::list<unsigned int> > &pt_assoc_skel,
-													  Eigen::Vector2d &fstpt,
-													  const algorithm::skeletonization::propagation::OptionsSphProp &options)
+skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
+																						std::map<unsigned int, std::list<unsigned int> > &pt_assoc_skel,
+																						const OptionsSphProp &options)
 {
-	std::unordered_map<unsigned int,std::tuple<Eigen::Vector2d, unsigned int, unsigned int> > bndopti;
+	OptiBnd optiBnd;
 	skeleton::GraphSkel2d::Ptr skel(new skeleton::GraphSkel2d(skeleton::model::Classic<2>()));
 	
-	for(unsigned int i = 0; i < disbnd->getNbVertices(); i++)
-	{
-		std::tuple<Eigen::Vector2d,unsigned int,unsigned int> pt = 
-			std::make_tuple(disbnd->getCoordinates(i),disbnd->getPrev(i),disbnd->getNext(i)); // be sure it's in trigonometric order
-		bndopti.insert(std::make_pair(i,pt));
-	}
+	// creation of the optimized boundary structure
+	createOptiBnd(disbnd,optiBnd);
 	
+	// estimation of a point inside the shape
+	Eigen::Vector2d firstPt = firstPoint(optiBnd);
+	
+	// estimation of the first Voronoi point
 	std::list<unsigned int> lclosest;
-	algorithm::skeletonization::propagation::correction(bndopti,fstpt,lclosest);
-
-	algorithm::skeletonization::propagation::MovingCenter mov(fstpt);
-	mov.computeTangencyData(bndopti,options.epsilon);
+	algorithm::skeletonization::propagation::firstVoroPoint(optiBnd,firstPt,lclosest);
 	
+	// first moving center instance
+	algorithm::skeletonization::propagation::MovingCenter mov(firstPt);
+	mov.computeContactData(optiBnd,options.epsilon);
+	
+	// search for a local maximum in the Voronoi diagram to be sure that we have a skeletal point
 	bool maximised = true;
-	
 	do
 	{
 		algorithm::skeletonization::propagation::MovingCenter movn;
@@ -73,7 +69,7 @@ skeleton::GraphSkel2d::Ptr SpherePropagation2D_helper(const boundary::DiscreteBo
 			if(mov.getNext()[i])
 			{
 				algorithm::skeletonization::propagation::MovingCenter movncur;
-				mov.propagate(bndopti,i,movncur,options.epsilon);
+				mov.propagate(optiBnd,i,movncur,options.epsilon);
 				
 				if(maximised)
 				{
@@ -97,14 +93,14 @@ skeleton::GraphSkel2d::Ptr SpherePropagation2D_helper(const boundary::DiscreteBo
 	}while(maximised);
 	
 	mov = algorithm::skeletonization::propagation::MovingCenter(mov.getCenter());
-	mov.computeTangencyData(bndopti,options.epsilon);
+	mov.computeTangencyData(optiBnd,options.epsilon);
 
 	double rad = mov.getRadius();
 	unsigned int ind = skel->addNode(Eigen::Vector3d(mov.getCenter().x(),mov.getCenter().y(),rad));
 	std::list<unsigned int> bndneigh;
 	mov.getIndBnd(bndneigh);
 	pt_assoc_skel.insert(std::make_pair(ind,bndneigh));
-	mov.clean(bndopti);
+	mov.clean(optiBnd);
 	
 	std::list<std::tuple<unsigned int,algorithm::skeletonization::propagation::MovingCenter,unsigned int> > lctr;
 	for(unsigned int i = 0; i < mov.getNext().size(); i++)
@@ -127,11 +123,11 @@ skeleton::GraphSkel2d::Ptr SpherePropagation2D_helper(const boundary::DiscreteBo
 			lctr.pop_front();
 			
 			algorithm::skeletonization::propagation::MovingCenter movn;
-			if(std::get<1>(cdir).propagate(bndopti,std::get<2>(cdir),movn,options.epsilon))
+			if(std::get<1>(cdir).propagate(optiBnd,std::get<2>(cdir),movn,options.epsilon))
 			{
 				std::list<unsigned int> bndneighcur;
 				movn.getIndBnd(bndneighcur);
-				movn.clean(bndopti);
+				movn.clean(optiBnd);
 
 				unsigned int indcur = skel->addNode(Eigen::Vector3d(movn.getCenter().x(),movn.getCenter().y(),movn.getRadius()));
 				pt_assoc_skel.insert(std::make_pair(indcur,bndneighcur));
@@ -174,14 +170,4 @@ skeleton::GraphSkel2d::Ptr SpherePropagation2D_helper(const boundary::DiscreteBo
 		throw std::logic_error("arf");
 	
 	return skel;
-}
-
-skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
-																						std::map<unsigned int, std::list<unsigned int> > &pt_assoc_skel,
-																						const OptionsSphProp &options)
-{
-	srand(time(NULL));
-	Eigen::Vector2d C = firstPoint(disbnd);
-	
-	return SpherePropagation2D_helper(disbnd,pt_assoc_skel,C,options);
 }
