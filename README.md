@@ -36,7 +36,7 @@ To use it on an example:
 To compute a Voronoi skeleton:
 
 ```
-./soft_2dskeletonization --img ../ressources/rat.png --epsilon 0.00000001 --output
+./soft_2dskeletonization --img ../ressources/rat.png --epsilon 0.0 --output
 ```
 
 ## Misc
