@@ -118,11 +118,6 @@ int main(int argc, char** argv)
 	cv::Mat image(shpimg.rows,shpimg.cols,CV_8UC3,cv::Scalar(255,255,255));
 	
 	boundary::DiscreteBoundary<2>::Ptr disbnd = algorithm::extractboundary::NaiveBoundary(dissh);
-
-	if(disbnd->getPrev(0) != disbnd->getNbVertices() -1)
-	{
-		return -1;
-	}
 	
 	auto start0 = std::chrono::steady_clock::now();
 	algorithm::skeletonization::propagation::OptionsSphProp options(2.0*epsilon);
