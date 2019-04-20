@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/Ibujah/compactskel.svg?branch=master)](https://travis-ci.com/Ibujah/compactskel)
+
 # One-step compact skeletonization
 
 This software is an implementation of the compact skeletonization method.
