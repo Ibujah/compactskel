@@ -41,6 +41,13 @@ To compute a Voronoi skeleton:
 ./soft_2dskeletonization --img ../ressources/rat.png --epsilon 0.0 --output
 ```
 
+To get the list of software arguments, use: 
+
+```
+./soft_2dskeletonization --help
+```
+
+
 ## Misc
 
 If you find a bug, or have a question, do not hesitate to ask!
