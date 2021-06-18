@@ -75,10 +75,12 @@ namespace algorithm
 			/**
 			 *  @brief 2D skeletonization, by sphere propagation
 			 *  @param disbnd   Discrete boundary of the shape
+             *  @param nod_bnd  Link between boundary and skeletal nodes
 			 *  @param options  Options of the algorithm
 			 *  @return Pointer to the computed 2d graph skeleton
 			 */
 			skeleton::GraphSkel2d::Ptr SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
+                                                           std::map<unsigned int, std::vector<unsigned int> >& nod_bnd,
 														   const OptionsSphProp &options = OptionsSphProp());
 		}
 	}

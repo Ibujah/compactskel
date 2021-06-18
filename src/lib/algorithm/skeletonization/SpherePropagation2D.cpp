@@ -36,6 +36,7 @@ SOFTWARE.
 #include <fstream>
 
 #include <unordered_map>
+#include <utility>
 
 struct PropagData
 {
@@ -45,6 +46,7 @@ struct PropagData
 };
 
 skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropagation2D(const boundary::DiscreteBoundary<2>::Ptr disbnd,
+                                                                                        std::map<unsigned int, std::vector<unsigned int> >& nod_bnd,
 																						const OptionsSphProp &options)
 {
 	skeleton::GraphSkel2d::Ptr skel(new skeleton::GraphSkel2d(skeleton::model::Classic<2>()));
@@ -105,6 +107,8 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 	
 	// add it to the skeleton
 	unsigned int ind = skel->addNode(Eigen::Vector3d(mov.getCenter().x(),mov.getCenter().y(),mov.getRadius()));
+    nod_bnd.insert(std::make_pair(ind, mov.getClosestInds()));
+
 	
 	// clean boundary points
 	cleanOptiBnd(optiBnd,optiUsedBnd,mov.getToErase(),mov.getClosestInds());
@@ -134,6 +138,7 @@ skeleton::GraphSkel2d::Ptr algorithm::skeletonization::propagation::SpherePropag
 				cleanOptiBnd(optiBnd,optiUsedBnd,movNext.getToErase(),movNext.getClosestInds());
 
 				unsigned int indcur = skel->addNode(Eigen::Vector3d(movNext.getCenter().x(),movNext.getCenter().y(),movNext.getRadius()));
+                nod_bnd.insert(std::make_pair(indcur, movNext.getClosestInds()));
 				skel->addEdge(indcur,curData.skelInd);
 				
 				for(unsigned int i = 0; i < movNext.getOpen().size(); i++)

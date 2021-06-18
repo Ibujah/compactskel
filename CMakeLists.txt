@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
 project(SkeletonizationByPropagation)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -25,6 +27,7 @@ set(SHAPE_LIB      "Shape")
 set(BOUNDARY_LIB   "Boundary")
 set(ALGORITHM_LIB  "Algorithm")
 set(SKELETON_LIB   "Skeleton")
+set(FILEIO_LIB    "FileIO")
 
 set(DISPLAYOCV_LIB "DisplayOCV")
 

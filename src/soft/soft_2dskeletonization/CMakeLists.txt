@@ -17,6 +17,7 @@ target_link_libraries(${EXEC_NAME} ${MATHTOOLS_LIB}
 								   ${SKELETON_LIB}
 								   ${ALGORITHM_LIB}
 								   ${DISPLAYOCV_LIB}
+                                   ${FILEIO_LIB}
 								   ${Boost_PROGRAM_OPTIONS_LIBRARY}
 								   ${OpenCV_LIBS})
 
